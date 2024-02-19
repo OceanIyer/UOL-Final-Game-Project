@@ -12,7 +12,6 @@ let gameChar_world_y
 
 let cameraPos_x
 let cameraPos_y
-let scrollPos
 const damp = 0.9;
 
 const floorPos_y = 576 * 3/4;
@@ -72,6 +71,7 @@ function setup()
 	lives = 3
 
 	startGame()
+	pushPlatforms()
 }
 
 function draw()
@@ -106,6 +106,7 @@ function draw()
 
 	//draw platforms
 	for(const p of platforms){
+		p.update()
 		p.drawPlatform()
 	}
 
@@ -142,23 +143,8 @@ function draw()
 		checkFlagpole()
 	}
 
-	//Check if character is in contact with the enemy
-	//Draws enemy
-	for(const e of enemies)
-	{
-		e.draw()
-
-		let isContact = e.checkContact(gameChar_screen_x, gameChar_world_y)
-
-		if(isContact){
-			if(lives > 0){
-				startGame()
-				lives -= 1
-				deathSound.play()
-				break
-			}
-		}
-	}
+	//Draws enemies and checks if character is in contact with them
+	checkEnemies()
 
 	//checks if player is alive or not
 	checkPlayerDie()
@@ -220,6 +206,9 @@ function draw()
 				isContact = true
 				isFalling = false
 				gameChar_world_y = p.y
+				if(p instanceof MovingPlatform){
+					gameChar_screen_x += p.direction
+				}
 				break
 			}
 		}
@@ -1143,7 +1132,7 @@ function renderFlagpole(){
 function checkFlagpole(){
 	const d = abs(gameChar_screen_x - flagpole.x_pos)
 
-	if(d < 10){
+	if(d < 10 && game_score == collectables.length){
 		flagpole.isReached = true
 		checkpointSound.play()
 	}
@@ -1165,7 +1154,6 @@ function startGame(){
 	gameChar_world_x = gameChar_screen_x
 	gameChar_screen_y = floorPos_y
 	gameChar_world_y = gameChar_screen_y
-	scrollPos = 0
 	cameraPos_x = 0
 	cameraPos_y = 0
 
@@ -1188,26 +1176,25 @@ function startGame(){
 		{x_pos: 200, y_pos: 0},
 		{x_pos: 500, y_pos: 0},
 		{x_pos: 700, y_pos: 0},
-		{x_pos: 900, y_pos: 0},
-		{x_pos: 1100, y_pos: 0},
-		{x_pos: 1500, y_pos: 0},
+		{x_pos: 1550, y_pos: 0},
 		{x_pos: 1700, y_pos: 0},
 		{x_pos: 1900, y_pos: 0},
-		{x_pos: -1900, y_pos: 0}
+		{x_pos: 2200, y_pos: 0},
+		{x_pos: 2500, y_pos: 0},
 	]
 
 	//Clouds Array
 	clouds = [
-		{x_pos: random(-1900, 1900), y_pos: 0},
-		{x_pos: random(-1900, 1900), y_pos: 0},
-		{x_pos: random(-1900, 1900), y_pos: 0},
-		{x_pos: random(-1900, 1900), y_pos: 0},
-		{x_pos: random(-1900, 1900), y_pos: 0},
-		{x_pos: random(-1900, 1900), y_pos: 0},
-		{x_pos: random(-1900, 1900), y_pos: 0},
-		{x_pos: random(-1900, 1900), y_pos: 0},
-		{x_pos: random(-1900, 1900), y_pos: 0},
-		{x_pos: random(-1900, 1900), y_pos: 0}
+		{x_pos: random(-1900, 1900), y_pos: random(0, -100)},
+		{x_pos: random(-1900, 1900), y_pos: random(0, -100)},
+		{x_pos: random(-1900, 1900), y_pos: random(0, -100)},
+		{x_pos: random(-1900, 1900), y_pos: random(0, -100)},
+		{x_pos: random(-1900, 1900), y_pos: random(0, -100)},
+		{x_pos: random(-1900, 1900), y_pos: random(0, -100)},
+		{x_pos: random(-1900, 1900), y_pos: random(0, -100)},
+		{x_pos: random(-1900, 1900), y_pos: random(0, -100)},
+		{x_pos: random(-1900, 1900), y_pos: random(0, -100)},
+		{x_pos: random(-1900, 1900), y_pos: random(0, -100)}
 	]
 
 	//Mountain Array
@@ -1222,6 +1209,9 @@ function startGame(){
 		{x_pos: 500, y_pos: 0},
 		{x_pos: 800, y_pos: 0},
 		{x_pos: 1200, y_pos: 0},
+		{x_pos: 1500, y_pos: 0},
+		{x_pos: 1800, y_pos: 0},
+		{x_pos: 2100, y_pos: 0},
 	]
 
 	cameraPosX = 0
@@ -1236,7 +1226,7 @@ function startGame(){
 		},
 
 		collectable_2 = {
-			x_pos: -250,
+			x_pos: -850,
 			y_pos: floorPos_y,
 			size: 50,
 			isFound: false
@@ -1248,6 +1238,27 @@ function startGame(){
 			size: 50,
 			isFound: false
 		},
+
+		collectable_4 = {
+			x_pos: -1800,
+			y_pos: floorPos_y,
+			size: 50,
+			isFound: false
+		},
+
+		collectable_5 = {
+			x_pos: -1490,
+			y_pos: floorPos_y - 440,
+			size: 50,
+			isFound: false
+		},
+
+		collectable_6 = {
+			x_pos: 1950,
+			y_pos: floorPos_y - 350,
+			size: 50,
+			isFound: false
+		}
 	]
 
 	//Canyon Array of Objects
@@ -1267,52 +1278,86 @@ function startGame(){
 			width: 150
 		},
 
+		canyon_4 = {
+			x_pos: -800,
+			width: 250
+		},
+		
+		canyon_5 = {
+			x_pos: -1800,
+			width: 500
+		},
+
+		canyon_6 = {
+			x_pos: 1480,
+			width: 650
+		}
+
 	]
 
 
-	platforms.push(createPlatforms(100, floorPos_y - 90, 150))
-	platforms.push(createPlatforms(1200, floorPos_y - 90, 150))
+	// platforms.push(new Platform(100, floorPos_y - 90, 150))
+	// platforms.push(new MovingPlatform(-700, floorPos_y - 50, 100, 100))
+	// platforms.push(new Platform(1200, floorPos_y - 90, 150))
 
-	for(let i = 0; i < 2; i++){
-		platforms.push(createPlatforms(platforms.at(-1).x + 80,
-										platforms.at(-1).y - 100,
-										150))
-	}
+	// for(let i = 0; i < 2; i++){
+	// 	platforms.push(new Platform(platforms.at(-1).x + 80,
+	// 									platforms.at(-1).y - 100,
+	// 									150))
+	// }
 
 
-	enemies = []
+	enemies_1 = []
+	enemies_2 = []
 	
 	for(var e = 0; e < 6; e++){
-		enemies.push(new Enemy(-50 + e*15, floorPos_y, 220))
+		enemies_1.push(new Enemy(-50 + e*15, floorPos_y, 220))
 	}
+
+	for(var e = 0; e < 6; e++){
+		enemies_1.push(new Enemy(1150 + e*15, floorPos_y, 260))
+	}
+
+	for(var e = 0; e < 6; e++){
+		enemies_1.push(new Enemy(-1200 + e*15, floorPos_y, 260))
+	}
+
+	enemies_2.push(new Enemy_2(700, floorPos_y-80, 80))
+	enemies_2.push(new Enemy_2(-350, floorPos_y-80, 80))
+
 	game_score = 0
 
 	flagpole = {
 		isReached: false,
-		x_pos: 2000
+		x_pos: 2500
 	}
-
-	console.log(lives)
 	
 }
 
 
-function createPlatforms(x, y, length)
+class Platform
 {
-	const p = {
-		x: x,
-		y: y,
-		length: length,
-		drawPlatform: function()
+	constructor(x, y, length){
+		this.x = x
+		this.y = y
+		this.length = length
+	}
+		drawPlatform()
 		{
 			fill(244,164,96)
 			rect(this.x, this.y, this.length, 30)
-		},
-		checkContact: function(gc_x, gc_y)
+		}
+
+		update(){
+
+		}
+
+		checkContact(gc_x, gc_y)
 		{
 			if(gc_x > this.x && gc_x < this.x + this.length)
 			{
 				const d = this.y - gc_y
+
 				if(d >= 0 && d < 5){
 					return true
 				}
@@ -1320,9 +1365,24 @@ function createPlatforms(x, y, length)
 
 			return false
 		}
+}
+
+class MovingPlatform extends Platform{
+	constructor(x, y, length, range){
+		super(x, y, length)
+		this.range = range
+		this.anchor = x
+		this.direction = 1
 	}
 
-	return p
+	update(){
+		if(abs(this.anchor - this.x) > this.range){
+			this.direction *= -1
+		}
+
+		this.x += this.direction
+		
+	}
 }
 
 function Enemy(x, y, range){
@@ -1363,5 +1423,120 @@ function Enemy(x, y, range){
 		}
 
 		return false
+	}
+}
+
+
+function Enemy_2(x, y, range){
+	this.x = x
+	this.y = y
+	this.range = range
+	
+	this.currentX = x
+	this.currentY = y
+	this.inc = 1
+
+	this.update = function()
+	{
+		this.currentY += this.inc
+
+		if(this.currentY >= this.y + this.range)
+		{
+			this.inc = -1
+		} else if(this.currentY < this.y){
+			this.inc = 1
+		}
+	}
+
+	this.draw = function()
+	{
+		this.update()
+		
+		// ellipse(this.currentX, this.y, 20, 20
+		fill(175, 150, 0)
+		triangle(this.currentX, this.currentY, this.currentX + 15, this.currentY - 30, this.currentX + 30, this.currentY)
+		fill(240,230,140)
+		triangle(this.currentX + 5, this.currentY, this.currentX + 15, this.currentY - 15, this.currentX + 25, this.currentY)
+		fill(255)
+		rect(this.currentX + 6, this.currentY - 20, 7, 7)
+		rect(this.currentX + 18, this.currentY - 20, 7, 7)
+		fill(0)
+		ellipse(this.currentX + 9, this.currentY - 16.5, 4, 4)
+		ellipse(this.currentX + 21.5, this.currentY - 16.5, 4, 4)
+	}
+
+	this.checkContact = function(gc_x, gc_y)
+	{
+		const d = dist(gc_x, gc_y, this.currentX + 15, this.currentY - 15)
+		if(d < 20)
+		{
+			return true
+		}
+		return false
+	}
+}
+
+function checkEnemies(){
+	for(const e of enemies_1)
+	{
+		e.draw()
+
+		let isContact = e.checkContact(gameChar_screen_x, gameChar_world_y)
+
+		if(isContact){
+			if(lives > 0){
+				startGame()
+				lives -= 1
+				deathSound.play()
+				break
+			}
+		}
+	}
+
+	for(const e of enemies_2)
+	{
+		e.draw()
+
+		let isContact = e.checkContact(gameChar_screen_x, gameChar_world_y - 30)
+
+		if(isContact){
+			if(lives > 0){
+				startGame()
+				lives -= 1
+				deathSound.play()
+				break
+			}
+		}
+	}
+}
+
+function pushPlatforms(){
+	platforms.push(new Platform(100, floorPos_y - 90, 150))
+	platforms.push(new MovingPlatform(-700, floorPos_y - 50, 100, 100))
+	platforms.push(new MovingPlatform(-1600, floorPos_y - 50, 150, 200))
+	platforms.push(new Platform(-1800, floorPos_y - 150, 150))
+
+	for(let i = 0; i < 1; i++){
+		platforms.push(new Platform(platforms.at(-1).x + 80,
+										platforms.at(-1).y - 100,
+										150))
+	}
+
+	platforms.push(new MovingPlatform(-1500, floorPos_y - 250, 100, 75))
+	platforms.push(new Platform(-1425, floorPos_y - 350, 150))
+	for(let i = 0; i < 1; i++){
+		platforms.push(new Platform(platforms.at(-1).x - 80,
+										platforms.at(-1).y - 100,
+										150))
+	}
+
+	platforms.push(new MovingPlatform(1800, floorPos_y - 290, 150, 150))
+
+	platforms.push(new Platform(1200, floorPos_y - 90, 150))
+
+	for(let i = 0; i < 2; i++){
+		platforms.push(new Platform(platforms.at(-1).x + 80,
+										platforms.at(-1).y - 100,
+										150))
 	}
 }
