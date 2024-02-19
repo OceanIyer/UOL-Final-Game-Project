@@ -40,11 +40,13 @@ let backgroundSound
 const platforms = []
 let enemies
 
+let emit
+
 function preload()
 {
     soundFormats('mp3','wav', 'm4a');
     
-    //load your sounds here
+    //loading sounds
     deathSound = loadSound('assets/death.mp3')
     deathSound.setVolume(0.2)
 
@@ -65,11 +67,17 @@ function preload()
 function setup()
 {
 	createCanvas(1024, 576)
+	//Loops music in background
 	backgroundSound.loop()
-	//Initialising Variables
-	
+
+	//Creates new emitter
+	emit = new Emitter(2500, floorPos_y - 1000, 0, 1, 10, color(255))
+	//Emits particles
+	emit.startEmitter(10000, 25000)
+
 	lives = 3
 
+	//Game reset if character dies
 	startGame()
 	pushPlatforms()
 }
@@ -80,13 +88,14 @@ function draw()
 	background(48, 201, 229) //draws sky
 
 	// Sets camera's position relative to the world
-	// Creates
+	// Creates damping to camera position when moving char
 	const targetPos_x =  gameChar_world_x - gameChar_screen_x;
   	const targetPos_y =  gameChar_world_y - gameChar_screen_y;
 	cameraPos_x = cameraPos_x * damp + targetPos_x * (1 - damp)
 	cameraPos_y = cameraPos_y * damp + targetPos_y * (1 - damp)
 
 	push()
+	
 	///Moves world in relation to camera
 	translate(cameraPos_x, -cameraPos_y)
 
@@ -104,12 +113,11 @@ function draw()
 	// For loop for drawing the trees
 	drawTrees()
 
-	//draw platforms
+	//draw platforms and updating position of moving ones
 	for(const p of platforms){
 		p.update()
 		p.drawPlatform()
 	}
-
 
 	//Checking if the character is on the collectable so isFound can be set to true
 	// and drawing the collectable
@@ -121,7 +129,6 @@ function draw()
 		}
 	}
 
-
 	//Checking if the game character is falling on the canyon and drawing canyon
 	for(const ca of canyons)
 	{
@@ -130,7 +137,6 @@ function draw()
 		    drawCanyon(ca)
         }
 	}
-
 
 	//Drawing the game character
 	drawGameCharacter()
@@ -148,6 +154,7 @@ function draw()
 
 	//checks if player is alive or not
 	checkPlayerDie()
+	emit.updateParticles()
 	pop()
 
 	// Writing score to the screen
@@ -156,7 +163,7 @@ function draw()
 	textSize(22)
 	text("Score: " + game_score, 25, 70)
 
-	//Drawing lifes to the screen
+	//Drawing lives to the screen
 	for (let i = 0; i < lives; i++){
 		fill(255, 0 , 0)
         rect(30 + 30*i, 20, 7, 25, 100)
@@ -165,35 +172,36 @@ function draw()
 
 	// Game ending screen
 	if (lives < 1){
-		fill(0)
+		fill(255)
 		textSize(20)
-		text("Game over. Press space to continue", width/2 - 150, height/2)
+		text("Game over. Press space to try again", width/2 - 150, height/2)
 		return;
 	}
 
 	//Level Complete Screen
 	if(flagpole.isReached){
-		fill(0)
+		fill(255)
 		textSize(20)
-		text("Level Complete. Press space to continue", width/2 - 150, height/2)
+		text("Level Complete. Press space to try again", width/2 - 150, height/2)
+		text("Your score: " + game_score, width/2 - 10, height/2 + 30)
 		return;
 	}
 	
-
 	///////////INTERACTION CODE AND LOGIC//////////
 	//Put conditional statements to move the game character below here
 
 	//Moves character to the left
 	if (isLeft){
 		gameChar_screen_x -= 5
-	}
+	} 
 
 	//Moves character to the right
 	if (isRight){
 		gameChar_screen_x += 5
-	}
+	} 
 
 	isFalling = false
+
 	//Logic for gravity so the character falls back down
 	//Logic for the character to stand on platform
 	if (gameChar_world_y < floorPos_y)
@@ -244,21 +252,18 @@ function keyPressed()
 {
 	// if statements to control the animation of the character when
 	// keys are pressed.
-
 	//Sets the variable isRight true when D key is pressed
 	if (keyCode == 68 && isPlummeting == false){
 		isRight = true
-		
 	}
 
 	//Sets the variable isLeft true when A key is pressed
 	if (keyCode == 65 && isPlummeting == false){
 		isLeft = true
-		
 	}
 
 	//Sets the variable isFalling true when W key is pressed
-	//Creates charaacter jumping
+	//logic for charaacter jumping
 	if ((key == "w" || key == " ") && isFalling == false 
 		&& isPlummeting == false){
 		isFalling = true
@@ -271,18 +276,15 @@ function keyPressed()
 function keyReleased()
 {
 	// if statements to control the animation of the character when
-	// keys are released.
-
+	// keys are released
 	// Releasing the right key
 	if (keyCode == 68){
 		isRight = false
-	
 	}
 
 	//Releasing the left key
 	if (keyCode == 65){
 		isLeft = false
-	
 	}
 }
 
@@ -322,19 +324,23 @@ function drawGameCharacter(){
 		endShape()
 		
 		stroke(242, 119, 63)
-		line(gameChar_screen_x + 19, gameChar_world_y - 49, gameChar_screen_x + 24, gameChar_world_y - 44)
+		line(gameChar_screen_x + 19, gameChar_world_y - 49,
+			 gameChar_screen_x + 24, gameChar_world_y - 44)
 		noStroke()
 	
 		stroke(242, 119, 63)
-		line(gameChar_screen_x + 22, gameChar_world_y - 41, gameChar_screen_x + 17, gameChar_world_y - 46)
+		line(gameChar_screen_x + 22, gameChar_world_y - 41,
+			 gameChar_screen_x + 17, gameChar_world_y - 46)
 		noStroke()
 	
 		stroke(242, 119, 63)
-		line(gameChar_screen_x - 22, gameChar_world_y - 41, gameChar_screen_x - 17, gameChar_world_y - 46)
+		line(gameChar_screen_x - 22, gameChar_world_y - 41,
+			 gameChar_screen_x - 17, gameChar_world_y - 46)
 		noStroke()
 	
 		stroke(242, 119, 63)
-		line(gameChar_screen_x - 19, gameChar_world_y - 49, gameChar_screen_x - 24, gameChar_world_y - 44)
+		line(gameChar_screen_x - 19, gameChar_world_y - 49,
+			 gameChar_screen_x - 24, gameChar_world_y - 44)
 		noStroke()
 	
 		//Purple Head and body
@@ -364,7 +370,8 @@ function drawGameCharacter(){
 	
 		//mouth
 		stroke(0)
-		line(gameChar_screen_x - 6, gameChar_world_y - 63, gameChar_screen_x - 3, gameChar_world_y - 63)
+		line(gameChar_screen_x - 6, gameChar_world_y - 63,
+			 gameChar_screen_x - 3, gameChar_world_y - 63)
 	
 		noStroke()
 
@@ -414,19 +421,23 @@ function drawGameCharacter(){
 		endShape()
 		
 		stroke(242, 119, 63)
-		line(gameChar_screen_x + 19, gameChar_world_y - 49, gameChar_screen_x + 24, gameChar_world_y - 44)
+		line(gameChar_screen_x + 19, gameChar_world_y - 49, 
+			gameChar_screen_x + 24, gameChar_world_y - 44)
 		noStroke()
 
 		stroke(242, 119, 63)
-		line(gameChar_screen_x + 22, gameChar_world_y - 41, gameChar_screen_x + 17, gameChar_world_y - 46)
+		line(gameChar_screen_x + 22, gameChar_world_y - 41,
+			 gameChar_screen_x + 17, gameChar_world_y - 46)
 		noStroke()
 
 		stroke(242, 119, 63)
-		line(gameChar_screen_x - 22, gameChar_world_y - 41, gameChar_screen_x - 17, gameChar_world_y - 46)
+		line(gameChar_screen_x - 22, gameChar_world_y - 41,
+			 gameChar_screen_x - 17, gameChar_world_y - 46)
 		noStroke()
 
 		stroke(242, 119, 63)
-		line(gameChar_screen_x - 19, gameChar_world_y - 49, gameChar_screen_x - 24, gameChar_world_y - 44)
+		line(gameChar_screen_x - 19, gameChar_world_y - 49,
+			 gameChar_screen_x - 24, gameChar_world_y - 44)
 		noStroke()
 
 		//Purple Head and body
@@ -456,7 +467,8 @@ function drawGameCharacter(){
 
 		//mouth
 		stroke(0)
-		line(gameChar_screen_x + 6, gameChar_world_y - 63, gameChar_screen_x + 3, gameChar_world_y - 63)
+		line(gameChar_screen_x + 6, gameChar_world_y - 63,
+			 gameChar_screen_x + 3, gameChar_world_y - 63)
 
 		noStroke()
 
@@ -503,7 +515,8 @@ function drawGameCharacter(){
 
 		//mouth
 		stroke(0)
-		line(gameChar_screen_x - 13, gameChar_world_y - 48, gameChar_screen_x - 7, gameChar_world_y - 48)
+		line(gameChar_screen_x - 13, gameChar_world_y - 48,
+			 gameChar_screen_x - 7, gameChar_world_y - 48)
 
 		noStroke()
 
@@ -553,7 +566,8 @@ function drawGameCharacter(){
 
 		//mouth
 		stroke(0)
-		line(gameChar_screen_x + 13, gameChar_world_y - 48, gameChar_screen_x + 7, gameChar_world_y - 48)
+		line(gameChar_screen_x + 13, gameChar_world_y - 48,
+			 gameChar_screen_x + 7, gameChar_world_y - 48)
 
 		noStroke()
 
@@ -598,19 +612,23 @@ function drawGameCharacter(){
 		endShape()
 		
 		stroke(242, 119, 63)
-		line(gameChar_screen_x + 19, gameChar_world_y - 49, gameChar_screen_x + 24, gameChar_world_y - 44)
+		line(gameChar_screen_x + 19, gameChar_world_y - 49,
+			 gameChar_screen_x + 24, gameChar_world_y - 44)
 		noStroke()
 
 		stroke(242, 119, 63)
-		line(gameChar_screen_x + 22, gameChar_world_y - 41, gameChar_screen_x + 17, gameChar_world_y - 46)
+		line(gameChar_screen_x + 22, gameChar_world_y - 41,
+			 gameChar_screen_x + 17, gameChar_world_y - 46)
 		noStroke()
 
 		stroke(242, 119, 63)
-		line(gameChar_screen_x - 22, gameChar_world_y - 41, gameChar_screen_x - 17, gameChar_world_y - 46)
+		line(gameChar_screen_x - 22, gameChar_world_y - 41,
+			 gameChar_screen_x - 17, gameChar_world_y - 46)
 		noStroke()
 
 		stroke(242, 119, 63)
-		line(gameChar_screen_x - 19, gameChar_world_y - 49, gameChar_screen_x - 24, gameChar_world_y - 44)
+		line(gameChar_screen_x - 19, gameChar_world_y - 49,
+			 gameChar_screen_x - 24, gameChar_world_y - 44)
 		noStroke()
 
 		//Purple Head and body
@@ -640,7 +658,8 @@ function drawGameCharacter(){
 
 		//mouth
 		stroke(0)
-		line(gameChar_screen_x, gameChar_world_y - 61, gameChar_screen_x + 3.5, gameChar_world_y - 61)
+		line(gameChar_screen_x, gameChar_world_y - 61,
+			 gameChar_screen_x + 3.5, gameChar_world_y - 61)
 
 		noStroke()
 
@@ -676,7 +695,8 @@ function drawGameCharacter(){
 		ellipse(gameChar_screen_x - 6, gameChar_world_y - 48, 4, 5)
 
 		stroke(0)
-		line(gameChar_screen_x - 2, gameChar_world_y - 48, gameChar_screen_x + 3, gameChar_world_y - 48)
+		line(gameChar_screen_x - 2, gameChar_world_y - 48,
+			 gameChar_screen_x + 3, gameChar_world_y - 48)
 
 		noStroke()
 
@@ -1066,6 +1086,7 @@ function drawTrees()
 
 function drawCollectable(t_collectable)
 {
+	//Checking to see if collecatble is found and if not then draw it
 	if(t_collectable.isFound == false){
 		fill(222, 173, 25)
 		ellipse(t_collectable.x_pos, t_collectable.y_pos - 50,
@@ -1083,6 +1104,7 @@ function drawCollectable(t_collectable)
 			 t_collectable.size * 1/14, t_collectable.size)
 		ellipse(t_collectable.x_pos, t_collectable.y_pos - 50, 
 			t_collectable.size, t_collectable.size * 1/14)
+
 	}
 }
 
@@ -1096,7 +1118,10 @@ function drawCanyon(t_canyon)
 
 function checkCollectable(t_collectable)
 {
-	if(dist(gameChar_screen_x, gameChar_world_y, t_collectable.x_pos, t_collectable.y_pos) < 20){
+	//Calculates distance between player and collectable
+	//If player is close enough then collecatble is "collected" and game_score updates
+	if(dist(gameChar_screen_x, gameChar_world_y,
+			 t_collectable.x_pos, t_collectable.y_pos) < 20){
 		t_collectable.isFound = true;
 		console.log(collectables.isFound)
 		game_score += 1
@@ -1106,6 +1131,7 @@ function checkCollectable(t_collectable)
 
 function checkCanyon(t_canyon)
 {
+	// Checks to see if player is over the canyon and less then floorPos_y
 	if(gameChar_screen_x > t_canyon.x_pos + 20 && gameChar_screen_x < t_canyon.x_pos 
 		+ t_canyon.width && gameChar_world_y >= floorPos_y){
 		isPlummeting = true
@@ -1119,6 +1145,7 @@ function renderFlagpole(){
 	line(flagpole.x_pos, floorPos_y, flagpole.x_pos, floorPos_y - 100)
 	fill(255, 0, 0)
 	noStroke()
+	//Draw for when pole is reached or not reached
 	if(flagpole.isReached){
 		rect(flagpole.x_pos, floorPos_y - 100, -50, 40)
 	}
@@ -1132,7 +1159,9 @@ function renderFlagpole(){
 function checkFlagpole(){
 	const d = abs(gameChar_screen_x - flagpole.x_pos)
 
-	if(d < 10 && game_score == collectables.length){
+	//Checks distance between player and pole
+	//Sets isReached to true if player is close enough
+	if(d < 10){
 		flagpole.isReached = true
 		checkpointSound.play()
 	}
@@ -1140,6 +1169,7 @@ function checkFlagpole(){
 
 //Function check if the player is still alive
 function checkPlayerDie(){
+	//Restarts game if player loses a life
 	if(gameChar_world_y > 576 && lives > 0){
 		lives -= 1
 		deathSound.play()
@@ -1295,21 +1325,10 @@ function startGame(){
 
 	]
 
-
-	// platforms.push(new Platform(100, floorPos_y - 90, 150))
-	// platforms.push(new MovingPlatform(-700, floorPos_y - 50, 100, 100))
-	// platforms.push(new Platform(1200, floorPos_y - 90, 150))
-
-	// for(let i = 0; i < 2; i++){
-	// 	platforms.push(new Platform(platforms.at(-1).x + 80,
-	// 									platforms.at(-1).y - 100,
-	// 									150))
-	// }
-
-
 	enemies_1 = []
 	enemies_2 = []
 	
+	//Creating new enemies and pushing it to the required array
 	for(var e = 0; e < 6; e++){
 		enemies_1.push(new Enemy(-50 + e*15, floorPos_y, 220))
 	}
@@ -1327,6 +1346,7 @@ function startGame(){
 
 	game_score = 0
 
+	//Sets flagpole position in world
 	flagpole = {
 		isReached: false,
 		x_pos: 2500
@@ -1342,23 +1362,24 @@ class Platform
 		this.y = y
 		this.length = length
 	}
-		drawPlatform()
+	//method to draw platform
+	drawPlatform()
+	{
+		fill(244,164,96)
+		rect(this.x, this.y, this.length, 30)
+	}
+
+	update(){
+
+	}
+
+	//Method to see if player is in contact with platform
+	checkContact(gc_x, gc_y)
+	{
+		if(gc_x > this.x && gc_x < this.x + this.length)
 		{
-			fill(244,164,96)
-			rect(this.x, this.y, this.length, 30)
-		}
-
-		update(){
-
-		}
-
-		checkContact(gc_x, gc_y)
-		{
-			if(gc_x > this.x && gc_x < this.x + this.length)
-			{
-				const d = this.y - gc_y
-
-				if(d >= 0 && d < 5){
+			const d = this.y - gc_y
+			if(d >= 0 && d < 5){
 					return true
 				}
 			}
@@ -1375,6 +1396,7 @@ class MovingPlatform extends Platform{
 		this.direction = 1
 	}
 
+	//Method to move the platform within the range given
 	update(){
 		if(abs(this.anchor - this.x) > this.range){
 			this.direction *= -1
@@ -1393,6 +1415,7 @@ function Enemy(x, y, range){
 	this.currentX = x
 	this.inc = 1
 
+	//Method to update position of enemy
 	this.update = function()
 	{
 		this.currentX += this.inc
@@ -1405,15 +1428,18 @@ function Enemy(x, y, range){
 		}
 	}
 
+	//Method to draw enemy
 	this.draw = function()
 	{
 		this.update()
 		fill(175, 0, 0)
-		// ellipse(this.currentX, this.y, 20, 20)
 		rect(this.currentX, this.y, 5, -20)
-		triangle(this.currentX - 5, this.y - 20, this.currentX + 3, this.y - 30, this.currentX + 10, this.y - 20)
+		triangle(this.currentX - 5, this.y - 20, this.currentX + 3, 
+				this.y - 30, this.currentX + 10, this.y - 20)
 	}
 
+	//Method to calculate the dist between player and enemy
+	// Used to check if in contact
 	this.checkContact = function(gc_x, gc_y)
 	{
 		const d = dist(gc_x, gc_y, this.currentX, this.y)
@@ -1451,12 +1477,12 @@ function Enemy_2(x, y, range){
 	this.draw = function()
 	{
 		this.update()
-		
-		// ellipse(this.currentX, this.y, 20, 20
 		fill(175, 150, 0)
-		triangle(this.currentX, this.currentY, this.currentX + 15, this.currentY - 30, this.currentX + 30, this.currentY)
+		triangle(this.currentX, this.currentY, this.currentX + 15,
+				 this.currentY - 30, this.currentX + 30, this.currentY)
 		fill(240,230,140)
-		triangle(this.currentX + 5, this.currentY, this.currentX + 15, this.currentY - 15, this.currentX + 25, this.currentY)
+		triangle(this.currentX + 5, this.currentY, this.currentX + 15,
+				 this.currentY - 15, this.currentX + 25, this.currentY)
 		fill(255)
 		rect(this.currentX + 6, this.currentY - 20, 7, 7)
 		rect(this.currentX + 18, this.currentY - 20, 7, 7)
@@ -1477,6 +1503,8 @@ function Enemy_2(x, y, range){
 }
 
 function checkEnemies(){
+	//Draws Enemy and checks if player is touching the enemy
+	//If the player is the game is reset and you lose a life
 	for(const e of enemies_1)
 	{
 		e.draw()
@@ -1511,6 +1539,7 @@ function checkEnemies(){
 }
 
 function pushPlatforms(){
+	//Creating new platforms
 	platforms.push(new Platform(100, floorPos_y - 90, 150))
 	platforms.push(new MovingPlatform(-700, floorPos_y - 50, 100, 100))
 	platforms.push(new MovingPlatform(-1600, floorPos_y - 50, 150, 200))
@@ -1539,4 +1568,84 @@ function pushPlatforms(){
 										platforms.at(-1).y - 100,
 										150))
 	}
+}
+
+
+function Particle(x, y, xSpeed, ySpeed, size, colour)
+{
+	this.x = x
+	this.y = y
+	this.xSpeed = xSpeed
+	this.ySpeed = ySpeed
+	this.size = size
+	this.colour = colour
+	this.age = 0
+
+	this.drawParticle = function(){
+		fill(this.colour)
+		ellipse(this.x, this.y, this.size)
+	}
+
+	this.updateParticle = function(){
+		this.x += this.xSpeed
+		this.y += this.ySpeed
+		this.age++
+	}
+}
+
+function Emitter(x, y, xSpeed, ySpeed, size, colour){
+	this.x = x
+	this.y = y
+	this.xSpeed = xSpeed
+	this.ySpeed = ySpeed
+	this.size = size
+	this.colour = colour
+
+	this.lifetime = 0
+	this.startParticles = 0
+
+	this.particles = []
+
+	//Method to create new particles
+	this.addParticle = function(){
+		const p = new Particle(random(this.x -10, this.x + 10),
+								random(this.y - 10, this.y + 10), 
+								random(this.xSpeed - 1, this.xSpeed + 1),
+			 					random(this.ySpeed - 1, this.ySpeed + 1), 
+								random(this.size - 2, this.size + 2), 
+								this.colour)
+
+		return p
+	}
+
+	//Method to Start emitting particles
+	this.startEmitter = function(startParticles, lifetime){
+		this.startParticles = startParticles
+		this.lifetime = lifetime
+
+		//start emitter with initial particles
+		for(let i = 0; i < startParticles; i++){
+			this.particles.push(this.addParticle())
+		}
+	}
+
+	//Method to iterate through particles and draw them
+	this.updateParticles = function(){
+		let deadParticles = 0
+		for(let i = this.particles.length - 1; i >= 0; i--)
+		{
+			this.particles[i].drawParticle()
+			this.particles[i].updateParticle()
+			if(this.particles[i].age > random(0, this.lifetime)){
+				this.particles.splice(i, 1)
+				deadParticles++
+			}
+		}
+
+		if(deadParticles > 0){
+			for(let i = 0; i < deadParticles; i++){
+				this.particles.push(this.addParticle())
+			}
+		}
+	} 
 }
