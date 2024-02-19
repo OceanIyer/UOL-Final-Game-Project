@@ -1366,7 +1366,7 @@ class Platform
 	drawPlatform()
 	{
 		fill(244,164,96)
-		rect(this.x, this.y, this.length, 30)
+		rect(this.x, this.y, this.length, 10)
 	}
 
 	update(){
@@ -1379,7 +1379,8 @@ class Platform
 		if(gc_x > this.x && gc_x < this.x + this.length)
 		{
 			const d = this.y - gc_y
-			if(d >= 0 && d < 5){
+			console.log(d)
+			if(d >= -30 && d < 5){
 					return true
 				}
 			}
@@ -1540,7 +1541,7 @@ function checkEnemies(){
 
 function pushPlatforms(){
 	//Creating new platforms
-	platforms.push(new Platform(100, floorPos_y - 90, 150))
+	platforms.push(new Platform(100, floorPos_y - 70, 150))
 	platforms.push(new MovingPlatform(-700, floorPos_y - 50, 100, 100))
 	platforms.push(new MovingPlatform(-1600, floorPos_y - 50, 150, 200))
 	platforms.push(new Platform(-1800, floorPos_y - 150, 150))
